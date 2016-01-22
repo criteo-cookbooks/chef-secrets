@@ -1,0 +1,3 @@
+[submodule "ext/chef-vault"]
+	path = ext/chef-vault
+	url = https://github.com/chef/chef-vault.git
