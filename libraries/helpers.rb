@@ -90,7 +90,7 @@ Chef::Node.send(:include, ChefSecretAttributes)
 class Chef
   # Monkeypatch Node
   class Node
-    alias_method :original_save, :save
+    alias_method :chef_secret_old_save, :save unless defined?(chef_secret_old_save)
 
     def save
       unless @chef_secret_attributes.nil?
@@ -99,7 +99,7 @@ class Chef
           chef_secret_attribute_clear(attribute)
         end
       end
-      original_save
+      chef_secret_old_save
     end
   end
 end
