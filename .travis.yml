@@ -1,0 +1,12 @@
+language: ruby
+rvm:
+- 2.1.0
+deploy:
+  edge: true
+  provider: chef-supermarket
+  user_id: criteo
+  cookbook_category: Utilities
+  client_key: ".travis/client.pem"
+  on:
+    tags: true
+    all_branches: true
