@@ -6,11 +6,11 @@ More info about `chef-vault`: https://github.com/chef-cookbooks/chef-vault
 
 ## Usage pattern (with wrapper cookbooks)
 
-Let us say you are using a cookbook that requires you to set a password in an attribute. You would normally overwrite this attribute in a wrapper cookbook. By including this cookbook as well, you can set the attribute in the wrapper cookbook's attribute file like this:
+Let us say you are using a cookbook that requires you to set a password in an attribute. This attribute is usually set in a wrapper cookbook which includes the original cookbook. By including this cookbook as well, you can set the attribute in the wrapper cookbook's attribute file like this:
 ```ruby
 secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item')
 ```
-This will set the attribute `default['cookbook']['password']` to the `item` from the `vault`.  If the item in the vault does not exist it will **fail**.
+This will set the attribute `default['cookbook']['password']` to the `item` from the `vault`. It will also set the attribute to `SECRET` at the end of the Chef run, therefore ensuring that the Chef Server will not contain the password in plaintaxt. If the item in the vault does not exist it will **fail**.
 
 If you would like to default to a value in a testing environment, you can do:
 ```ruby
