@@ -14,8 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative "chef-vault_mixins"
+
 class ChefVault
   class ItemKeys < Chef::DataBagItem
+
+    include ChefVault::Mixins
+
     def initialize(vault, name)
       super() # parentheses required to strip off parameters
       @data_bag = vault
@@ -30,6 +35,10 @@ class ChefVault
     end
 
     def add(chef_client, data_bag_shared_secret, type)
+      unless @raw_data.key?(type)
+        raise ChefVault::Exceptions::V1Format,
+              "cannot manage a v1 vault.  See UPGRADE.md for help"
+      end
       public_key = OpenSSL::PKey::RSA.new chef_client.public_key
       self[chef_client.name] =
         Base64.encode64(public_key.public_encrypt(data_bag_shared_secret))
@@ -59,18 +68,9 @@ class ChefVault
       @raw_data["admins"]
     end
 
-    def save(item_id=@raw_data['id'])
+    def save(item_id=@raw_data["id"])
       if Chef::Config[:solo]
-        data_bag_path = File.join(Chef::Config[:data_bag_path],
-                                  data_bag)
-        data_bag_item_path = File.join(data_bag_path, item_id)
-
-        FileUtils.mkdir(data_bag_path) unless File.exist?(data_bag_path)
-        File.open("#{data_bag_item_path}.json", 'w') do |file|
-          file.write(JSON.pretty_generate(raw_data))
-        end
-
-        raw_data
+        save_solo(item_id)
       else
         begin
           Chef::DataBag.load(data_bag)
@@ -117,13 +117,13 @@ class ChefVault
       rescue Net::HTTPServerException => http_error
         if http_error.response.code == "404"
           raise ChefVault::Exceptions::KeysNotFound,
-                "#{vault}/#{name} could not be found"
+            "#{vault}/#{name} could not be found"
         else
           raise http_error
         end
       rescue Chef::Exceptions::ValidationFailed
         raise ChefVault::Exceptions::KeysNotFound,
-              "#{vault}/#{name} could not be found"
+          "#{vault}/#{name} could not be found"
       end
 
       from_data_bag_item(data_bag_item)
