@@ -19,7 +19,11 @@ module ChefVaultCookbook
 
   def chef_vault_item_or_default(bag, id, default = nil)
     if chef_vault_item_is_vault?(bag, id)
-      ChefVault::Item.load(bag, id)
+      begin
+        ChefVault::Item.load(bag, id)
+      rescue ChefVault::Exceptions::SecretDecryption
+        !default.nil? ? default : raise
+      end
     elsif !default.nil?
       default
     else
