@@ -5,7 +5,7 @@ Metrics/LineLength:
 # Based on data from http://sideeffect.kr/popularconvention#ruby
 #
 ### Comma after each line in a list
-Style/TrailingComma:
+Style/TrailingCommaInLiteral:
   EnforcedStyleForMultiline: comma
 # It is very common to add key/value pairs to hashes in Chef attributes. Making
 # sure each line has a comma diminishes the chance of someone making an error

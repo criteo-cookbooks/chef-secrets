@@ -17,6 +17,7 @@ module ChefVaultCookbook
     http_error.response.code == '404' ? false : raise(http_error)
   end
 
+  # rubocop:disable Metrics/MethodLength
   def chef_vault_item_or_default(bag, id, default = nil)
     if chef_vault_item_is_vault?(bag, id)
       begin
@@ -27,9 +28,10 @@ module ChefVaultCookbook
     elsif !default.nil?
       default
     else
-      fail "Cannot load vault item #{id} from #{bag}, and no default value is defined"
+      raise "Cannot load vault item #{id} from #{bag}, and no default value is defined"
     end
   end
+  # rubocop:enable Metrics/MethodLength
 end
 
 Chef::Node.send(:include, ChefVaultCookbook)
@@ -94,7 +96,7 @@ Chef::Node.send(:include, ChefSecretAttributes)
 class Chef
   # Monkeypatch Node
   class Node
-    alias_method :chef_secret_old_save, :save unless defined?(chef_secret_old_save)
+    alias chef_secret_old_save save unless defined?(chef_secret_old_save)
 
     def save
       unless @chef_secret_attributes.nil?
