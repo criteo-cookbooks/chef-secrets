@@ -7,5 +7,5 @@ if /cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM
   KNIFE = ::File.join('C:', 'opscode', 'chef', 'bin', 'knife.bat')
 else
   set :backend, :exec
-  KNIFE = 'knife'
+  KNIFE = 'knife'.freeze
 end

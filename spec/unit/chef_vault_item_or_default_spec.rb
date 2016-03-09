@@ -45,8 +45,8 @@ describe ChefVaultCookbook do
 
     it 'returns defined default if the item cannot be decrypted' do
       allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
-      allow(ChefVault::Item).to receive(:load).with('bag', 'id').
-        and_raise(ChefVault::Exceptions::SecretDecryption)
+      allow(ChefVault::Item).to receive(:load).with('bag', 'id')
+        .and_raise(ChefVault::Exceptions::SecretDecryption)
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
     end
   end
