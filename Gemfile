@@ -14,3 +14,10 @@ group :unit do
 end
 
 gem 'chef-vault'
+
+group :ec2 do
+  gem 'kitchen'
+  gem 'kitchen-ec2', :git => 'https://github.com/criteo-forks/kitchen-ec2.git', :branch => 'criteo'
+  gem 'winrm',      '~> 1.6'
+  gem 'winrm-fs',   '~> 0.3'
+end
