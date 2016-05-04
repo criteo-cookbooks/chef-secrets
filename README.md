@@ -10,7 +10,7 @@ Let us say you are using a cookbook that requires you to set a password in an at
 ```ruby
 secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item')
 ```
-This will set the attribute `default['cookbook']['password']` to the `item` from the `vault`. It will also set the attribute to `SECRET` at the end of the Chef run, therefore ensuring that the Chef Server will not contain the password in plaintaxt. If the item in the vault does not exist it will **fail**.
+This will set the attribute `default['cookbook']['password']` to the `item` from the `vault`. It will also set the attribute to `SECRET` at the end of the Chef run, therefore ensuring that the Chef Server will not contain the password in plaintext. If the item in the vault does not exist it will **fail**.
 
 If you would like to default to a value in a testing environment, you can do:
 ```ruby
