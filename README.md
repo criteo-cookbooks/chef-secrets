@@ -14,9 +14,11 @@ This will set the attribute `default['cookbook']['password']` to the `item` from
 
 If you would like to default to a value in a testing environment, you can do:
 ```ruby
-fallback = { key: 'fallback' } if node.chef_environment == 'test'
+fallback = Mash.new({ key: 'fallback' }) if node.chef_environment == 'test'
 
 secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item', fallback)
+
+# use it anywhere with node['cookbook']['password']['key']
 ```
 
 Note that a chef-vault item will always be a hash, so it may be better to set the fallback to a similar hash as well.
