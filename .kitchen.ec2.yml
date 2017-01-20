@@ -15,28 +15,30 @@ driver:
   require_chef_omnibus: 12.5.1
   instance_type: t2.micro
   associate_public_ip: true
+  iam_profile_name: test-kitchen
   region: <%= ENV['AWS_REGION'] || 'us-west-2' %>
   subnet_filter:
-    tag:   'Name'
+    tag: 'Name'
     value: <%= ENV['AWS_SUBNET'] || 'chef-testing-opensource-vpc-subnet' %>
   security_group_filter:
-    tag:   'Name'
+    tag: 'Name'
     value: <%= ENV['AWS_SECURITY_GROUP'] || 'chef-testing-opensource-vpc-security-group' %>
+  block_device_mappings:
+    - device_name: /dev/sda1
+      ebs:
+        volume_type: gp2
+        delete_on_termination: true
 
 transport:
   ssh_key: <%= ENV['HOME'] %>/.ssh/id_rsa
 
 provisioner:
-  name:        chef_zero
+  name: chef_zero
   clients_path: test/fixtures/clients
 
 platforms:
   - name: centos-7
-    driver:
-      image_id: ami-d2c924b2
   - name: windows-2012r2
-    driver:
-      image_id: ami-df8767bf
 
 suites:
   - name: default

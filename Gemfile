@@ -13,11 +13,11 @@ group :unit do
   gem 'chefspec'
 end
 
-gem 'chef-vault'
+gem 'chef-vault', '>= 3.0.0.rc1'
 
 group :ec2 do
   gem 'kitchen'
-  gem 'kitchen-ec2', :git => 'https://github.com/criteo-forks/kitchen-ec2.git', :branch => 'criteo'
-  gem 'winrm',      '~> 1.6'
-  gem 'winrm-fs',   '~> 0.3'
+  gem 'kitchen-ec2', git: 'https://github.com/criteo-forks/kitchen-ec2.git', branch: 'criteo'
+  gem 'winrm'
+  gem 'winrm-fs'
 end
