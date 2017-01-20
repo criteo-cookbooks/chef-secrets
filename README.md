@@ -14,7 +14,7 @@ This will set the attribute `default['cookbook']['password']` to the `item` from
 
 If you would like to default to a value in a testing environment, you can do:
 ```ruby
-fallback = Mash.new({ key: 'fallback' }) if node.chef_environment == 'test'
+fallback = Mash.new({ key: 'fallback' }) if ENV['TEST_KITCHEN'] || defined?(ChefSpec) || Chef::Config[:local_mode]
 
 secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item', fallback)
 
