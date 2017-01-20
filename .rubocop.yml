@@ -1,8 +1,13 @@
+---
 ### Disable rubocop for bundled chef-vault
 AllCops:
   Exclude:
     - 'ext/chef-vault/**/*'
     - 'libraries/chef-vault_*'
+### Disable block size for rspec
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
 ### Disable line length constraint
 Metrics/LineLength:
   Max: 120
