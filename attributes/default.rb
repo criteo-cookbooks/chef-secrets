@@ -2,4 +2,4 @@
 default['chef-vault']['databag_fallback'] = false
 
 # The version of chef-vault should be the same as the bundled version
-default['chef-vault']['version'] = '2.8.0'
+default['chef-vault']['version'] = '3.0.0.rc2'

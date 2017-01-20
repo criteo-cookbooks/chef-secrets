@@ -16,8 +16,8 @@ require_relative 'chef-vault_item'
 require_relative 'chef-vault_item_keys'
 require_relative 'chef-vault_user'
 require_relative 'chef-vault_certificate'
-require_relative 'chef-vault_chef_patch_api_client'
-require_relative 'chef-vault_chef_patch_user'
+require_relative 'chef-vault_chef_api'
+require_relative 'chef-vault_actor'
 #
 # Bundled ChefVault
 #
@@ -40,4 +40,10 @@ class ChefVault
   def self.load_config(chef_config_file)
     Chef::Config.from_file(chef_config_file)
   end
+
+  class Log
+    extend Mixlib::Log
+  end
+
+  Log.level = :error
 end

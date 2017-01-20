@@ -1,5 +1,6 @@
 # Author:: Kevin Moser <kevin.moser@nordstrom.com>
 # Copyright:: Copyright 2013-15, Nordstrom, Inc.
+# Copyright:: Copyright 2015-16, Chef Software, Inc.
 # License:: Apache License, Version 2.0
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,44 +68,56 @@ class ChefVault
       }.merge(opts)
       @node_name = opts[:node_name]
       @client_key_path = opts[:client_key_path]
+      @current_query = search
     end
 
+    # private
     def load_keys(vault, keys)
       @keys = ChefVault::ItemKeys.load(vault, keys)
       @secret = secret
     end
 
-    def clients(search_or_client = nil, action = :add)
-      if search_or_client.is_a?(Chef::ApiClient)
+    def clients(search_or_client = search_results, action = :add)
+      # for backwards compatibility, if we're handed a string
+      # do a search using that string and recurse
+      if search_or_client.is_a?(String)
+        clients(search_results(search_or_client), action)
+      elsif search_or_client.is_a?(Chef::ApiClient)
         handle_client_action(search_or_client, action)
-      elsif search_or_client
-        results_returned = false
-        query = Chef::Search::Query.new
-        query.search(:node, search_or_client) do |node|
-          results_returned = true
-          case action
-          when :add
-            begin
-              client = load_client(node.name)
-              add_client(client)
-            rescue ChefVault::Exceptions::ClientNotFound
-              $stdout.puts "node '#{node.name}' has no private key; skipping"
-            end
-          when :delete
-            delete_client_or_node(node)
-          else
-            raise ChefVault::Exceptions::KeysActionNotValid,
-              "#{action} is not a valid action"
+      else
+        search_or_client.each do |name|
+          begin
+            client = load_actor(name, "clients")
+            handle_client_action(client, action)
+          rescue ChefVault::Exceptions::ClientNotFound
+            ChefVault::Log.warn "node '#{name}' has no private key; skipping"
           end
+        end
+      end
+    end
+
+    def search_results(statement = search)
+      @search_results = nil if statement != @current_query
+      @current_query = statement
+      @search_results ||= begin
+        results_returned = false
+        results = []
+        query = Chef::Search::Query.new
+        query.search(:node, statement, filter_result: { name: ["name"] }, rows: 100000) do |node|
+          results_returned = true
+          results << node["name"] # ~FC039
         end
 
         unless results_returned
-          $stdout.puts "WARNING: No clients were returned from search, you may not have "\
+          ChefVault::Log.warn "No clients were returned from search, you may not have "\
             "got what you expected!!"
         end
-      else
-        keys.clients
+        results
       end
+    end
+
+    def get_clients
+      keys.clients
     end
 
     def search(search_query = nil)
@@ -115,23 +128,24 @@ class ChefVault
       end
     end
 
-    def admins(admins = nil, action = :add)
-      if admins
-        admins.split(",").each do |admin|
-          admin.strip!
-          case action
-          when :add
-            keys.add(load_admin(admin), @secret, "admins")
-          when :delete
-            keys.delete(admin, "admins")
-          else
-            raise ChefVault::Exceptions::KeysActionNotValid,
-              "#{action} is not a valid action"
-          end
+    def admins(admin_string, action = :add)
+      admin_string.split(",").each do |admin|
+        admin.strip!
+        admin_key = load_actor(admin, "admins")
+        case action
+        when :add
+          keys.add(admin_key, @secret)
+        when :delete
+          keys.delete(admin_key)
+        else
+          raise ChefVault::Exceptions::KeysActionNotValid,
+                "#{action} is not a valid action"
         end
-      else
-        keys.admins
       end
+    end
+
+    def get_admins
+      keys.admins
     end
 
     def remove(key)
@@ -158,19 +172,17 @@ class ChefVault
     def rotate_keys!(clean_unknown_clients = false)
       @secret = generate_secret
 
-      unless clients.empty?
+      unless get_clients.empty?
         # a bit of a misnomer; this doesn't remove unknown
         # admins, just clients which are nodes
         remove_unknown_nodes if clean_unknown_clients
         # re-encrypt the new shared secret for all remaining clients
-        clients.each do |client|
-          clients("name:#{client}")
-        end
+        clients(get_clients)
       end
 
-      unless admins.empty?
+      unless get_admins.empty?
         # re-encrypt the new shared secret for all admins
-        admins.each do |admin|
+        get_admins.each do |admin|
           admins(admin)
         end
       end
@@ -179,6 +191,7 @@ class ChefVault
       reload_raw_data
     end
 
+    # private
     def generate_secret(key_size = 32)
       # Defaults to 32 bytes, as this is the size that a Chef
       # Encrypted Data Bag Item will digest all secrets down to anyway
@@ -196,6 +209,29 @@ class ChefVault
     end
 
     def save(item_id = @raw_data["id"])
+      save_keys(item_id)
+      # Make sure the item is encrypted before saving
+      encrypt! unless @encrypted
+
+      # Now save the encrypted data
+      if Chef::Config[:solo_legacy_mode]
+        save_solo(item_id)
+      else
+        begin
+          Chef::DataBag.load(data_bag)
+        rescue Net::HTTPServerException => http_error
+          if http_error.response.code == "404"
+            chef_data_bag = Chef::DataBag.new
+            chef_data_bag.name data_bag
+            chef_data_bag.create
+          end
+        end
+
+        super
+      end
+    end
+
+    def save_keys(item_id = @raw_data["id"])
       # validate the format of the id before attempting to save
       validate_id!(item_id)
 
@@ -214,26 +250,6 @@ class ChefVault
       end
 
       keys.save
-
-      # Make sure the item is encrypted before saving
-      encrypt! unless @encrypted
-
-      # Now save the encrypted data
-      if Chef::Config[:solo]
-        save_solo(item_id)
-      else
-        begin
-          Chef::DataBag.load(data_bag)
-        rescue Net::HTTPServerException => http_error
-          if http_error.response.code == "404"
-            chef_data_bag = Chef::DataBag.new
-            chef_data_bag.name data_bag
-            chef_data_bag.create
-          end
-        end
-
-        super
-      end
     end
 
     def to_json(*a)
@@ -244,7 +260,7 @@ class ChefVault
     def destroy
       keys.destroy
 
-      if Chef::Config[:solo]
+      if Chef::Config[:solo_legacy_mode]
         data_bag_path = File.join(Chef::Config[:data_bag_path],
                                   data_bag)
         data_bag_item_path = File.join(data_bag_path, @raw_data["id"])
@@ -280,6 +296,11 @@ class ChefVault
       end
 
       item
+    end
+
+    def delete_client(client_name)
+      client_key = load_actor(client_name, "clients")
+      keys.delete(client_key)
     end
 
     # determines if a data bag item looks like a vault
@@ -344,10 +365,10 @@ class ChefVault
       remove_unknown_nodes if clean_unknown_clients
 
       # re-process the search query to add new clients
-      clients(search)
+      clients
 
-      # save the updated vault
-      save
+      # save the updated keys only
+      save_keys(@raw_data["id"])
     end
 
     private
@@ -365,39 +386,8 @@ class ChefVault
       @raw_data
     end
 
-    def load_admin(admin)
-      begin
-        admin = ChefVault::ChefPatch::User.load(admin)
-      rescue Net::HTTPServerException => http_error
-        if http_error.response.code == "404"
-          begin
-            $stdout.puts "WARNING: #{admin} not found in users, trying clients."
-            admin = load_client(admin)
-          rescue ChefVault::Exceptions::ClientNotFound
-            raise ChefVault::Exceptions::AdminNotFound,
-              "FATAL: Could not find #{admin} in users or clients!"
-          end
-        else
-          raise http_error
-        end
-      end
-
-      admin
-    end
-
-    def load_client(client)
-      begin
-        client = ChefVault::ChefPatch::ApiClient.load(client)
-      rescue Net::HTTPServerException => http_error
-        if http_error.response.code == "404"
-          raise ChefVault::Exceptions::ClientNotFound,
-            "#{client} is not a valid chef client and/or node"
-        else
-          raise http_error
-        end
-      end
-
-      client
+    def load_actor(actor_name, type)
+      ChefVault::Actor.new(type, actor_name)
     end
 
     # removes unknown nodes by performing a node search
@@ -409,13 +399,13 @@ class ChefVault
       # build a list of clients to remove so we don't
       # mutate the clients while iterating over search results
       clients_to_remove = []
-      clients.each do |nodename|
+      get_clients.each do |nodename|
         clients_to_remove.push(nodename) unless node_exists?(nodename)
       end
       # now delete any flagged clients from the keys data bag
       clients_to_remove.each do |client|
-        $stdout.puts "Removing unknown client '#{client}'"
-        keys.delete(client, "clients")
+        ChefVault::Log.warn "Removing unknown client '#{client}'"
+        keys.delete(load_actor(client, "clients"))
       end
     end
 
@@ -426,14 +416,10 @@ class ChefVault
     # @param nodename [String] the name of the node
     # @return [Boolean] whether the node exists or not
     def node_exists?(nodename)
-      # the node does not exist if a search for the node with that
-      # name returns no results
-      query = Chef::Search::Query.new
-      numresults = query.search(:node, "name:#{nodename}")[2]
-      return false unless numresults > 0
-      # if the node search does return results, predicate node
-      # existence on the existence of a like-named client
-      client_exists?(nodename)
+      # if we don't have a client it really doesn't matter if we have a node.
+      if client_exists?(nodename)
+        search_results.include?(nodename)
+      end
     end
 
     # checks if a client exists on the Chef server.  If we get back
@@ -442,25 +428,24 @@ class ChefVault
     # @param clientname [String] the name of the client
     # @return [Boolean] whether the client exists or not
     def client_exists?(clientname)
-      begin
-        ChefVault::ChefPatch::ApiClient.load(clientname)
-      rescue Net::HTTPServerException => http_error
-        return false if http_error.response.code == "404"
-        raise http_error
-      end
+      Chef::ApiClient.load(clientname)
       true
+    rescue Net::HTTPServerException => http_error
+      return false if http_error.response.code == "404"
+      raise http_error
     end
 
     # adds or deletes an API client from the vault item keys
     # @param client [Chef::ApiClient] the API client to operate on
     # @param action [Symbol] :add or :delete
     # @return [void]
-    def handle_client_action(client, action)
+    def handle_client_action(api_client, action)
       case action
       when :add
+        client = load_actor(api_client.name, "clients")
         add_client(client)
       when :delete
-        delete_client_or_node(client)
+        delete_client_or_node(api_client.name)
       end
     end
 
@@ -468,14 +453,15 @@ class ChefVault
     # @param client [Chef::ApiClient] the API client to add
     # @return [void]
     def add_client(client)
-      keys.add(client, @secret, "clients")
+      keys.add(client, @secret)
     end
 
     # removes a client to the vault item keys
-    # @param client_or_node [Chef::ApiClient,Chef::Node] the API client or node to remove
+    # @param client_or_node [String] the name of the API client or node to remove
     # @return [void]
-    def delete_client_or_node(client_or_node)
-      keys.delete(client_or_node.name, "clients")
+    def delete_client_or_node(name)
+      client = load_actor(name, "clients")
+      keys.delete(client)
     end
   end
 end
