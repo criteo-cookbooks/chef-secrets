@@ -1,11 +1,4 @@
-#
-# Load Chef Vault gem, fallback to bundled
-#
-begin
-  require 'chef-vault'
-rescue LoadError
-  require_relative 'chef-vault'
-end
+require 'chef-vault'
 
 #
 # Extra helpers for Chef Vault
