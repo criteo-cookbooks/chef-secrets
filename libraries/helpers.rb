@@ -1,4 +1,44 @@
+require "chef/mixin/shell_out"
+
+include Chef::Mixin::ShellOut
+
+chef_vault_version = '2.8.0'
+
+def install_chef_vault(version)
+  # this code is stolen from chef/cookbook/gem_installer
+  env_path = ENV["PATH"].dup || ""
+  existing_paths = env_path.split(File::PATH_SEPARATOR)
+  existing_paths.unshift(RbConfig::CONFIG["bindir"])
+  env_path = existing_paths.join(File::PATH_SEPARATOR)
+  env_path.encode("utf-8", invalid: :replace, undef: :replace)
+
+  Chef::Log.info "Installing chef-vault #{version}"
+  if defined?(ChefSpec)
+    Chef::Log.warn "Won't install gem on user system. Will rely on chef-vault being in the Gemfile of the repository"
+  else
+    shell_out!(%(gem install chef-vault -v "#{version}"), env: { "PATH" => env_path })
+    Gem.clear_paths
+  end
+end
+
+# special treatment to workaround bugs from "gem" feature in cookbook metadata
+# https://github.com/chef/chef/issues/6038
+begin
+  gem 'chef-vault', "= #{chef_vault_version}"
+rescue Gem::LoadError => e # another version has already been loaded
+  case e.message
+  when /could not find/i
+    install_chef_vault(chef_vault_version)
+  when /already activated/i
+    raise "Another version of chef-vault has been loaded, aborting. #{e.message}"
+  else
+    raise
+  end
+end
+
 require 'chef-vault'
+
+Chef::Log.warn "Using chef-vault #{ChefVault::VERSION}"
 
 #
 # Extra helpers for Chef Vault

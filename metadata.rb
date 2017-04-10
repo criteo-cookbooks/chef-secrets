@@ -10,4 +10,3 @@ issues_url       'https://github.com/criteo-cookbooks/chef-secrets/issues'
 
 depends 'chef-vault'
 
-gem 'chef-vault', '= 2.8.0'

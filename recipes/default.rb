@@ -4,4 +4,4 @@
 #
 # Copyright (c) 2016 Criteo, All Rights Reserved.
 
-include_recipe 'chef-vault'
+# empty recipe for backward compat
