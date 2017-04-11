@@ -2,7 +2,7 @@ require "chef/mixin/shell_out"
 
 include Chef::Mixin::ShellOut
 
-chef_vault_version = '3.0.0.rc2'
+chef_vault_version = '3.0.0'
 
 def install_chef_vault(version)
   # this code is stolen from chef/cookbook/gem_installer
