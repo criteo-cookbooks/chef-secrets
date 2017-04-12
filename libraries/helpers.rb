@@ -1,6 +1,7 @@
 #
 # Load Chef Vault gem, fallback to bundled
 #
+require 'json'
 begin
   require 'chef-vault'
 rescue LoadError
