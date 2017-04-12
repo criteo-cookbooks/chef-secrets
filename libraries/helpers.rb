@@ -51,7 +51,7 @@ module ChefVaultCookbook
   end
 
   # rubocop:disable Metrics/MethodLength
-  def chef_vault_item_or_default(bag, id, default = nil, use_cache: false)
+  def chef_vault_item_or_default(bag, id, default = nil, use_cache = false)
     cached_item = ItemCache.new(bag, id)
     return cached_item.value if use_cache && cached_item.cached?
     if chef_vault_item_is_vault?(bag, id)
