@@ -30,7 +30,8 @@ Accessing many secrets on high latency links can be very long.
 
 Call it with `chef_vault_item_or_default('vault', 'item', fallback, true)`.
 
-Cached entry has a TTL set randomly between 1 and 12 hours.
+Cached entry has a TTL set randomly between 1 and 12 hours. This is to avoid refreshing all secrets at the same time (defeating the purpose of having caching).
+
 
 ## Secret attributes
 
