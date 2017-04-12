@@ -1,6 +1,7 @@
 #
 # Load Chef Vault gem, fallback to bundled
 #
+require 'json'
 begin
   require 'chef-vault'
 rescue LoadError
@@ -18,10 +19,14 @@ module ChefVaultCookbook
   end
 
   # rubocop:disable Metrics/MethodLength
-  def chef_vault_item_or_default(bag, id, default = nil)
+  def chef_vault_item_or_default(bag, id, default = nil, use_cache: false)
+    cached_item = ItemCache.new(bag, id)
+    return cached_item.value if use_cache && cached_item.cached?
     if chef_vault_item_is_vault?(bag, id)
       begin
-        ChefVault::Item.load(bag, id)
+        ChefVault::Item.load(bag, id).tap do |value|
+          cached_item.write(value)
+        end
       rescue ChefVault::Exceptions::SecretDecryption
         !default.nil? ? default : raise
       end
@@ -32,6 +37,39 @@ module ChefVaultCookbook
     end
   end
   # rubocop:enable Metrics/MethodLength
+
+  class ItemCache
+    attr_reader :bag, :id
+
+    def initialize(bag, id)
+      @bag = bag
+      @id = id
+    end
+
+    def ttl_in_seconds
+      # ttl is between 1 and 12 hours
+      [*1..12].sample * 3600
+    end
+
+    def cache_file
+      ::File.join(Chef::Config[:cache_path], 'chef-secrets-cache', bag, id)
+    end
+
+    def cached?
+      ::File.exist?(cache_file) && ::File.mtime(cache_file) > Time.now - ttl_in_seconds
+    end
+
+    def value
+      JSON.parse(File.read(cache_file))
+    rescue => e
+      Chef::Log.warn "Unable to read #{cache_file}. Exception was #{e.class.name} #{e.message}"
+    end
+
+    def write(value)
+      FileUtils.mkdir_p(File.dirname(cache_file))
+      File.write(cache_file, value.to_json)
+    end
+  end
 end
 
 Chef::Node.send(:include, ChefVaultCookbook)
