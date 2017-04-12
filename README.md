@@ -23,6 +23,15 @@ secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item', fal
 
 Note that a chef-vault item will always be a hash, so it may be better to set the fallback to a similar hash as well.
 
+## Caching
+
+Accessing many secrets on high latency links can be very long.
+`chef_vault_item_or_default` helper is able to cache for a few hours decrypted value on chef cache.
+
+Call it with `chef_vault_item_or_default('vault', 'item', fallback, use_cache: true)`.
+
+Cached entry has a TTL set randomly between 1 and 12 hours.
+
 ## Secret attributes
 
 ### Overview
