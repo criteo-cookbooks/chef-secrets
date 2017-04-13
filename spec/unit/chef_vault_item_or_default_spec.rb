@@ -64,12 +64,28 @@ describe ChefVaultCookbook do
       end
 
       context 'when value is very old' do
-        it 'return cached value' do
+        it 'return value' do
           allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
           allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
 
           expect(File).to receive(:exist?).and_return(true)
           expect(File).to receive(:mtime).and_return(Time.now - 86400)
+
+          expect(File).to receive(:write).with(/.*/, '"secret"')
+
+          expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default', use_cache: true)).to eq('secret')
+        end
+      end
+
+      context 'when cached file does not exist' do
+        it 'return values value' do
+          allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+          allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
+
+          expect(File).to receive(:exist?).and_return(false)
+
+          expect(File).to receive(:write).with(/.*/, '"secret"')
+
           expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default', use_cache: true)).to eq('secret')
         end
       end
