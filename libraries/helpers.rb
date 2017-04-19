@@ -25,7 +25,7 @@ module ChefVaultCookbook
     if chef_vault_item_is_vault?(bag, id)
       begin
         ChefVault::Item.load(bag, id).tap do |value|
-          cached_item.write(value)
+          cached_item.write(value) if use_cache
         end
       rescue ChefVault::Exceptions::SecretDecryption
         !default.nil? ? default : raise
