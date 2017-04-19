@@ -4,4 +4,17 @@
 #
 # Copyright (c) 2016 Criteo, All Rights Reserved.
 
-# empty recipe for backward compat
+
+# hide secrets by default
+directory ::File.join(Chef::Config[:cache_path], 'chef-secrets-cache') do
+  case node['os']
+  when 'linux'
+    owner 'root'
+    group 'root'
+    mode '0700'
+  when 'windows'
+    owner 'SYSTEM'
+    inherits false
+    rights :full_control, 'SYSTEM'
+  end
+end
