@@ -17,7 +17,8 @@ def install_chef_vault(version)
   if defined?(ChefSpec)
     Chef::Log.warn "Won't install gem on user system. Will rely on chef-vault being in the Gemfile of the repository"
   else
-    shell_out!(%(gem install chef-vault -v "#{version}"), env: { "PATH" => env_path })
+    source = Array.new(Chef::Config[:rubygems_url] || "https://www.rubygems.org").first
+    shell_out!(%(gem install chef-vault -v "#{version} -s #{source}"), env: { "PATH" => env_path })
     Gem.clear_paths
   end
 end
