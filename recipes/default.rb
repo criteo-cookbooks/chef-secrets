@@ -7,6 +7,7 @@
 
 # hide secrets by default
 directory ::File.join(Chef::Config[:cache_path], 'chef-secrets-cache') do
+  recursive true
   case node['os']
   when 'linux'
     owner 'root'
