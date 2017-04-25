@@ -59,7 +59,11 @@ module ChefVaultCookbook
     if chef_vault_item_is_vault?(bag, id)
       begin
         ChefVault::Item.load(bag, id).tap do |value|
-          cached_item.write(value) if use_cache
+          if use_cache
+            cached_item.write(value)
+          else
+            cached_item.delete
+          end
         end
       rescue ChefVault::Exceptions::SecretDecryption
         !default.nil? ? default : raise
@@ -102,6 +106,14 @@ module ChefVaultCookbook
     def write(value)
       FileUtils.mkdir_p(File.dirname(cache_file))
       File.write(cache_file, value.to_json)
+    end
+
+    def delete
+      begin
+        FileUtils.rm_f(cache_file) if File.exist?(cache_file)
+      rescue => e
+        puts "Failed to remove #{cache_file}, got #{e.class.name} #{e.message}"
+      end
     end
   end
 end
