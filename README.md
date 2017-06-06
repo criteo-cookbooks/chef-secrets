@@ -1,5 +1,9 @@
 # chef-secrets cookbook
 
+**Notice**: In version 0.4.0, this cookbook uses a version of chef-vault library very specific called 3.0.2.beta3.
+This version has not been published on rubygems and is built starting from official 3.0.1 with all criteo patches (https://github.com/chef/chef-vault/pulls?utf8=%E2%9C%93&q=%20is%3Apr%20author%3Akamaradclimber%20, pr chef/chef-vault#269, chef/chef-vault#271 and chef/chef-vault#272).
+If you are using this cookbook, stick to version != 0.4.0 for the moment. We will release a new version quickly after chef-vault is released with all the mentionned patches.
+
 This cookbook aims to ease `chef-vault` interaction by providing additional helpers, and testing the functionality on a Linux and Windows box.
 
 More info about `chef-vault`: https://github.com/chef-cookbooks/chef-vault
