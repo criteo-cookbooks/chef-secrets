@@ -28,7 +28,7 @@ Note that a chef-vault item will always be a hash, so it may be better to set th
 Accessing many secrets on high latency links can be very long.
 `chef_vault_item_or_default` helper is able to cache for a few hours decrypted value on chef cache.
 
-Call it with `chef_vault_item_or_default('vault', 'item', fallback, use_cache: true)`.
+Call it with `chef_vault_item_or_default('vault', 'item', fallback, true)`.
 
 Cached entry has a TTL set randomly between 1 and 12 hours. This is to avoid refreshing all secrets at the same time (defeating the purpose of having caching).
 
@@ -85,6 +85,3 @@ Return true if item is a vault item. Note that unlike `ChefVault::Item.vault?`, 
 ```ruby
 chef_vault_item_is_vault?('vault', 'item')
 ```
-
-## Bundling Chef Vault
-This cookbook bundles the chef-vault gem so that it may be used immediately at compile time in attributes. The bundled chef-vault gem is the one tracked in a submodule in `/ext/chef-vault`. To upgrade please checkout the appropriate commit in the submodule and run `ext/bundle.sh` to copy the newest files into the `libraries` directory. This is required so that one may set vault items in attributes.

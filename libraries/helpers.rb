@@ -1,12 +1,46 @@
-#
-# Load Chef Vault gem, fallback to bundled
-#
 require 'json'
-begin
-  require 'chef-vault'
-rescue LoadError
-  require_relative 'chef-vault'
+require "chef/mixin/shell_out"
+
+include Chef::Mixin::ShellOut
+
+chef_vault_version = '3.0.2.beta3'
+
+def install_chef_vault(version)
+  # this code is stolen from chef/cookbook/gem_installer
+  env_path = ENV["PATH"].dup || ""
+  existing_paths = env_path.split(File::PATH_SEPARATOR)
+  existing_paths.unshift(RbConfig::CONFIG["bindir"])
+  env_path = existing_paths.join(File::PATH_SEPARATOR)
+  env_path.encode("utf-8", invalid: :replace, undef: :replace)
+
+  Chef::Log.info "Installing chef-vault #{version}"
+  if defined?(ChefSpec)
+    Chef::Log.warn "Won't install gem on user system. Will rely on chef-vault being in the Gemfile of the repository"
+  else
+    source = Array(Chef::Config[:rubygems_url] || "https://www.rubygems.org").first
+    shell_out!(%(gem install chef-vault -v "#{version}" -s #{source}), env: { "PATH" => env_path })
+    Gem.clear_paths
+  end
 end
+
+# special treatment to workaround bugs from "gem" feature in cookbook metadata
+# https://github.com/chef/chef/issues/6038
+begin
+  gem 'chef-vault', "= #{chef_vault_version}"
+rescue Gem::LoadError => e # another version has already been loaded
+  case e.message
+  when /could not find/i
+    install_chef_vault(chef_vault_version)
+  when /already activated/i
+    raise "Another version of chef-vault has been loaded, aborting. #{e.message}"
+  else
+    raise
+  end
+end
+
+require 'chef-vault'
+
+Chef::Log.warn "Using chef-vault #{ChefVault::VERSION}"
 
 #
 # Extra helpers for Chef Vault
@@ -19,13 +53,17 @@ module ChefVaultCookbook
   end
 
   # rubocop:disable Metrics/MethodLength
-  def chef_vault_item_or_default(bag, id, default = nil, use_cache: false)
+  def chef_vault_item_or_default(bag, id, default = nil, use_cache = false)
     cached_item = ItemCache.new(bag, id)
     return cached_item.value if use_cache && cached_item.cached?
     if chef_vault_item_is_vault?(bag, id)
       begin
         ChefVault::Item.load(bag, id).tap do |value|
-          cached_item.write(value) if use_cache
+          if use_cache
+            cached_item.write(value)
+          else
+            cached_item.delete
+          end
         end
       rescue ChefVault::Exceptions::SecretDecryption
         !default.nil? ? default : raise
@@ -68,6 +106,14 @@ module ChefVaultCookbook
     def write(value)
       FileUtils.mkdir_p(File.dirname(cache_file))
       File.write(cache_file, value.to_json)
+    end
+
+    def delete
+      begin
+        FileUtils.rm_f(cache_file) if File.exist?(cache_file)
+      rescue => e
+        puts "Failed to remove #{cache_file}, got #{e.class.name} #{e.message}"
+      end
     end
   end
 end
