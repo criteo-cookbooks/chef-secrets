@@ -32,7 +32,8 @@ rescue Gem::LoadError => e # another version has already been loaded
   when /could not find/i
     install_chef_vault(chef_vault_version)
   when /already activated/i
-    raise "Another version of chef-vault has been loaded, aborting. #{e.message}"
+    raise "Another version of chef-vault has been loaded, aborting. #{e.message}" unless defined?(ChefSpec)
+    Chef::Log.warn "ChefSpec running with a version of chef-vault different than the target #{chef_vault_version}, proceeding anyway"
   else
     raise
   end
