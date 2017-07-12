@@ -6,19 +6,14 @@ include Chef::Mixin::ShellOut
 chef_vault_version = '3.2.0'
 
 def install_chef_vault(version)
-  # this code is stolen from chef/cookbook/gem_installer
-  env_path = ENV["PATH"].dup || ""
-  existing_paths = env_path.split(File::PATH_SEPARATOR)
-  existing_paths.unshift(RbConfig::CONFIG["bindir"])
-  env_path = existing_paths.join(File::PATH_SEPARATOR)
-  env_path.encode("utf-8", invalid: :replace, undef: :replace)
-
   Chef::Log.info "Installing chef-vault #{version}"
   if defined?(ChefSpec)
     Chef::Log.warn "Won't install gem on user system. Will rely on chef-vault being in the Gemfile of the repository"
   else
     source = Array(Chef::Config[:rubygems_url] || "https://www.rubygems.org").first
-    shell_out!(%(gem install chef-vault -v "#{version}" -s #{source}), env: { "PATH" => env_path })
+    # shell_out! has funny behaviour with setting the path via the env parameter - it won't use the proper gem bin if we
+    # set it that way
+    shell_out!(%("#{RbConfig::CONFIG["bindir"]}/gem" install chef-vault -v "#{version}" -s #{source}))
     Gem.clear_paths
   end
 end
