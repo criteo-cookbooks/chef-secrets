@@ -12,16 +12,13 @@ secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item')
 ```
 This will set the attribute `default['cookbook']['password']` to the `item` from the `vault`. It will also set the attribute to `SECRET` at the end of the Chef run, therefore ensuring that the Chef Server will not contain the password in plaintext. If the item in the vault does not exist it will **fail**.
 
-If you would like to default to a value in a testing environment, you can do:
+If you would like to default to a value in a testing environment, you can use the `chef_secrets` attributes namespace:
 ```ruby
-fallback = Mash.new({ key: 'fallback' }) if ENV['TEST_KITCHEN'] || defined?(ChefSpec) || Chef::Config[:local_mode]
-
-secret['cookbook']['password'] = chef_vault_item_or_default('vault', 'item', fallback)
+default['chef_secrets']['vaultX']['itemY'] = 'fake_secret'
+secret['cookbook']['password'] = chef_vault_item('vaultX', 'itemY')
 
 # use it anywhere with node['cookbook']['password']['key']
 ```
-
-Note that a chef-vault item will always be a hash, so it may be better to set the fallback to a similar hash as well.
 
 ## Caching
 
@@ -80,8 +77,39 @@ Get an item from the vault, or default to value if if the vault or item does not
 chef_vault_item_or_default('vault', 'item', 'default') 
 ```
 
+_Note_: A chef-vault item will always be a hash, so it may be better to set the default value to a similar hash as well.
+
 ### chef_vault_item_is_vault?
 Return true if item is a vault item. Note that unlike `ChefVault::Item.vault?`, this method returns false if the data bag does not exist.
 ```ruby
 chef_vault_item_is_vault?('vault', 'item')
+```
+
+## Mocking Vault items for testing environment
+
+Vault items are encrypted data-bags, to ease their testing in Test-kitchen and ChefSpec, you can define mock values via the `chef_secrets` attributes.
+
+```ruby
+default['chef_secrets']['fake']['secret'] = ::Mash.new(user: 'password')
+secret['user']['password'] = chef_vault_item('fake', 'secret')
+```
+
+For Test-Kitchen it's better to setup the vault attribute in the `kitchem.yml`.
+
+```yaml
+provisioner:
+  name: chef_zero
+
+platforms:
+- name: centos-7
+
+suites:
+- name: default
+  run_list:
+  - recipe[XXX]
+  attributes:
+    chef_secrets:
+      fake:
+        secret:
+          user: password
 ```
