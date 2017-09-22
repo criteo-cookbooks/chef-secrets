@@ -94,7 +94,7 @@ module ChefVaultCookbook
     end
 
     def value
-      ChefVault::Item.from_hash(JSON.parse(File.read(cache_file)))
+      JSON.parse(File.read(cache_file))
     rescue => e
       Chef::Log.warn "Unable to read #{cache_file}. Exception was #{e.class.name} #{e.message}"
     end
