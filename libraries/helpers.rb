@@ -48,11 +48,23 @@ module ChefVaultCookbook
     http_error.response.code == '404' ? false : raise(http_error)
   end
 
+  def chef_vault_item_exists?(bag, id)
+    @existing_items ||= {}
+    return @existing_items["#{bag}::#{id}"] if @existing_items.key?("#{bag}::#{id}")
+    @existing_items["#{bag}::#{id}"] = begin
+                                         Chef::DataBagItem.load(bag, id)
+                                         true
+                                       rescue Net::HTTPServerException => http_error
+                                         puts http_error.response.code
+                                         http_error.response.code.to_i == 404 ? false : raise
+                                       end
+  end
+
   # rubocop:disable Metrics/MethodLength
   def chef_vault_item_or_default(bag, id, default = nil, use_cache = false)
     cached_item = ItemCache.new(bag, id)
     return cached_item.value if use_cache && cached_item.cached?
-    if chef_vault_item_is_vault?(bag, id)
+    if chef_vault_item_exists?(bag, id)
       begin
         ChefVault::Item.load(bag, id).tap do |value|
           if use_cache

@@ -12,19 +12,19 @@ describe ChefVaultCookbook do
     end
 
     it 'returns a ChefVault item if it exists, without a default' do
-      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@@@')
       allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id')).to eq('secret')
     end
 
     it 'returns a ChefVault item if it exists, with a default' do
-      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@@')
       allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('secret')
     end
 
     it 'returns defined default if the ChefVault item does not exist' do
-      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(false)
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_raise(Net::HTTPServerException.new('', Net::HTTPResponse.new(nil, 404, '')))
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
     end
 
@@ -44,7 +44,7 @@ describe ChefVaultCookbook do
     end
 
     it 'returns defined default if the item cannot be decrypted' do
-      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
       allow(ChefVault::Item).to receive(:load).with('bag', 'id')
         .and_raise(ChefVault::Exceptions::SecretDecryption)
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
@@ -65,7 +65,7 @@ describe ChefVaultCookbook do
 
       context 'when value is very old' do
         it 'return value' do
-          allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+          allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
           allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
 
           expect(File).to receive(:exist?).and_return(true)
@@ -79,7 +79,7 @@ describe ChefVaultCookbook do
 
       context 'when cached file does not exist' do
         it 'return values value' do
-          allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
+          allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
           allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
 
           expect(File).to receive(:exist?).and_return(false)
