@@ -1,4 +1,5 @@
 require 'json'
+require 'chef/node'
 require "chef/mixin/shell_out"
 
 include Chef::Mixin::ShellOut
@@ -185,19 +186,16 @@ end
 
 Chef::Node.send(:include, ChefSecretAttributes)
 
-class Chef
-  # Monkeypatch Node
-  class Node
-    alias chef_secret_old_save save unless method_defined?(:chef_secret_old_save)
-
-    def save
-      unless @chef_secret_attributes.nil?
-        @chef_secret_attributes.each do |attribute|
-          Chef::Log.info("Clearing #{attribute}")
-          chef_secret_attribute_clear(attribute)
-        end
+module ClearSecretsBeforeSaving
+  def save
+    unless @chef_secret_attributes.nil?
+      @chef_secret_attributes.each do |attribute|
+        Chef::Log.info("Clearing #{attribute}")
+        chef_secret_attribute_clear(attribute)
       end
-      chef_secret_old_save
     end
+    super
   end
 end
+
+::Chef::Node.prepend ClearSecretsBeforeSaving
