@@ -37,7 +37,7 @@ end
 
 require 'chef-vault'
 
-Chef::Log.warn "Using chef-vault #{ChefVault::VERSION}"
+Chef::Log.info "Using chef-vault #{ChefVault::VERSION}"
 
 #
 # Extra helpers for Chef Vault
