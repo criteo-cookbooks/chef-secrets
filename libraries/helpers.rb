@@ -189,8 +189,8 @@ Chef::Node.send(:include, ChefSecretAttributes)
 module ClearSecretsBeforeSaving
   def save
     unless @chef_secret_attributes.nil?
-      @chef_secret_attributes.each do |attribute|
-        Chef::Log.info("Clearing #{attribute}")
+      @chef_secret_attributes.each_with_index do |attribute, i|
+        Chef::Log.info("Clearing #{attribute} and #{@chef_secret_attributes.size - 1} others") if i.zero?
         chef_secret_attribute_clear(attribute)
       end
     end
