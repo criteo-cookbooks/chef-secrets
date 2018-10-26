@@ -191,6 +191,7 @@ module ClearSecretsBeforeSaving
     unless @chef_secret_attributes.nil?
       @chef_secret_attributes.each_with_index do |attribute, i|
         Chef::Log.info("Clearing #{attribute} and #{@chef_secret_attributes.size - 1} others") if i.zero?
+        Chef::Log.debug("Clearing #{attribute}")
         chef_secret_attribute_clear(attribute)
       end
     end
