@@ -4,7 +4,7 @@ require "chef/mixin/shell_out"
 
 include Chef::Mixin::ShellOut
 
-chef_vault_version = '3.3.0'
+chef_vault_version = '3.4.3'
 
 def install_chef_vault(version)
   Chef::Log.info "Installing chef-vault #{version}"
