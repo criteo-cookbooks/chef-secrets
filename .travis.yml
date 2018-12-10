@@ -13,7 +13,7 @@ deploy:
   on:
     tags: true
 before_deploy:
-- openssl aes-256-cbc -K $encrypted_2f4029ef94a3_key -iv $encrypted_2f4029ef94a3_iv
+- openssl aes-256-cbc -K $encrypted_add39c5e3b2e_key -iv $encrypted_add39c5e3b2e_iv
   -in .travis/client.pem.enc -out .travis/client.pem -d
 env:
   global:
