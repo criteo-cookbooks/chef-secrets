@@ -13,7 +13,7 @@ group :unit do
   gem 'chefspec'
 end
 
-gem 'chef-vault', '= 3.3.0'
+gem 'chef-vault', '= 3.4.3'
 
 group :ec2 do
   gem 'kitchen'
