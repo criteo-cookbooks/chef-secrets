@@ -1,39 +1,5 @@
 require 'json'
 require 'chef/node'
-require "chef/mixin/shell_out"
-
-include Chef::Mixin::ShellOut
-
-chef_vault_version = '3.4.3'
-
-def install_chef_vault(version)
-  Chef::Log.info "Installing chef-vault #{version}"
-  if defined?(ChefSpec)
-    Chef::Log.warn "Won't install gem on user system. Will rely on chef-vault being in the Gemfile of the repository"
-  else
-    source = Array(Chef::Config[:rubygems_url] || "https://www.rubygems.org").first
-    # shell_out! has funny behaviour with setting the path via the env parameter - it won't use the proper gem bin if we
-    # set it that way
-    shell_out!(%("#{RbConfig::CONFIG["bindir"]}/gem" install chef-vault -v "#{version}" -s #{source}))
-    Gem.clear_paths
-  end
-end
-
-# special treatment to workaround bugs from "gem" feature in cookbook metadata
-# https://github.com/chef/chef/issues/6038
-begin
-  gem 'chef-vault', "= #{chef_vault_version}"
-rescue Gem::LoadError => e # another version has already been loaded
-  case e.message
-  when /could not find/i
-    install_chef_vault(chef_vault_version)
-  when /already activated/i
-    raise "Another version of chef-vault has been loaded, aborting. #{e.message}" unless defined?(ChefSpec)
-    Chef::Log.warn "ChefSpec running with a version of chef-vault different than the target #{chef_vault_version}, proceeding anyway"
-  else
-    raise
-  end
-end
 
 require 'chef-vault'
 
