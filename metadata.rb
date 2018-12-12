@@ -4,7 +4,7 @@ maintainer_email 'sre-core@criteo.com'
 license          'All rights reserved'
 description      'Installs/Configures chef-vault with helpers'
 long_description 'Installs/Configures chef-vault with helpers'
-version          '0.7.0'
+version          '0.8.0'
 source_url       'https://github.com/criteo-cookbooks/chef-secrets' if defined?(source_url)
 issues_url       'https://github.com/criteo-cookbooks/chef-secrets/issues' if defined?(issues_url)
 
