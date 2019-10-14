@@ -23,16 +23,6 @@ secret['cookbook']['password'] = chef_vault_item('vaultX', 'itemY')
 # use it anywhere with node['cookbook']['password']['key']
 ```
 
-## Caching
-
-Accessing many secrets on high latency links can be very long.
-`chef_vault_item_or_default` helper is able to cache for a few hours decrypted value on chef cache.
-
-Call it with `chef_vault_item_or_default('vault', 'item', fallback, true)`.
-
-Cached entry has a TTL set randomly between 1 and 12 hours. This is to avoid refreshing all secrets at the same time (defeating the purpose of having caching).
-
-
 ## Secret attributes
 
 ### Overview
