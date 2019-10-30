@@ -49,46 +49,5 @@ describe ChefVaultCookbook do
         .and_raise(ChefVault::Exceptions::SecretDecryption)
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
     end
-
-    describe 'caching mechanism' do
-      context 'when value is recent enough' do
-        it 'return cached value' do
-          expect(ChefVault::Item).not_to receive(:vault?)
-          expect(ChefVault::Item).not_to receive(:load)
-
-          expect(File).to receive(:exist?).and_return(true)
-          expect(File).to receive(:mtime).and_return(Time.now)
-          expect(File).to receive(:read).and_return("cached_value".to_json)
-          expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default', use_cache: true)).to eq('cached_value')
-        end
-      end
-
-      context 'when value is very old' do
-        it 'return value' do
-          allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
-          allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
-
-          expect(File).to receive(:exist?).and_return(true)
-          expect(File).to receive(:mtime).and_return(Time.now - 86400)
-
-          expect(File).to receive(:write).with(/.*/, '"secret"')
-
-          expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default', use_cache: true)).to eq('secret')
-        end
-      end
-
-      context 'when cached file does not exist' do
-        it 'return values value' do
-          allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
-          allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
-
-          expect(File).to receive(:exist?).and_return(false)
-
-          expect(File).to receive(:write).with(/.*/, '"secret"')
-
-          expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default', use_cache: true)).to eq('secret')
-        end
-      end
-    end
   end
 end
