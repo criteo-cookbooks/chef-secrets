@@ -23,11 +23,6 @@ describe ChefVaultCookbook do
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('secret')
     end
 
-    it 'returns defined default if the ChefVault item does not exist' do
-      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_raise(Net::HTTPServerException.new('', Net::HTTPResponse.new(nil, 404, '')))
-      expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
-    end
-
     it 'raises an error if there is a problem with databag retrieval' do
       response = Net::HTTPUnprocessableEntity.new('1.1', '418', "I'm a teapot")
       allow(Chef::DataBagItem).to receive(:load).with('bag', 'id')
@@ -36,11 +31,20 @@ describe ChefVaultCookbook do
         .to raise_error(Net::HTTPServerException)
     end
 
-    it 'returns defined default if the vault databag does not exist' do
+    it 'returns defined default if the vault databag does not exist (Rest mode)' do
       response = Net::HTTPNotFound.new('1.1', '404', 'Not Found')
       allow(Chef::DataBagItem).to receive(:load).with('bag', 'id')
         .and_raise(Net::HTTPServerException.new('Not Found', response))
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
+    end
+
+    it 'returns defined default if the vault databag does not exist (Solo mode)' do
+      # Missing databag Item
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id1').and_raise(Chef::Exceptions::InvalidDataBagItemID)
+      expect(dummy_class.new.chef_vault_item_or_default('bag', 'id1', 'default1')).to eq('default1')
+      # Missing databag
+      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id2').and_raise(Chef::Exceptions::InvalidDataBagPath)
+      expect(dummy_class.new.chef_vault_item_or_default('bag', 'id2', 'default2')).to eq('default2')
     end
 
     it 'returns defined default if the item cannot be decrypted' do
