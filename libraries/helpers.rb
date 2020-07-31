@@ -21,6 +21,8 @@ module ChefVaultCookbook
     @existing_items["#{bag}::#{id}"] = begin
                                          Chef::DataBagItem.load(bag, id)
                                          true
+                                       rescue Chef::Exceptions::InvalidDataBagPath, Chef::Exceptions::InvalidDataBagItemID
+                                         false
                                        rescue Net::HTTPServerException => http_error
                                          puts http_error.response.code
                                          http_error.response.code.to_i == 404 ? false : raise
