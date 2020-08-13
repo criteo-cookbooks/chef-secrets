@@ -13,20 +13,14 @@ module ChefVaultCookbook
     ChefVault::Item.vault?(bag, id)
   rescue Net::HTTPServerException => http_error
     http_error.response.code == '404' ? false : raise(http_error)
+  rescue ChefVault::Exceptions::ItemNotFound, Chef::Exceptions::InvalidDataBagPath, Chef::Exceptions::InvalidDataBagItemID
+    false
   end
 
   def chef_vault_item_exists?(bag, id)
     @existing_items ||= {}
     return @existing_items["#{bag}::#{id}"] if @existing_items.key?("#{bag}::#{id}")
-    @existing_items["#{bag}::#{id}"] = begin
-                                         Chef::DataBagItem.load(bag, id)
-                                         true
-                                       rescue Chef::Exceptions::InvalidDataBagPath, Chef::Exceptions::InvalidDataBagItemID
-                                         false
-                                       rescue Net::HTTPServerException => http_error
-                                         puts http_error.response.code
-                                         http_error.response.code.to_i == 404 ? false : raise
-                                       end
+    @existing_items["#{bag}::#{id}"] = chef_vault_item_is_vault?(bag, id)
   end
 
   # rubocop:disable Metrics/MethodLength
