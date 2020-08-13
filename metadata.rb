@@ -9,4 +9,4 @@ source_url       'https://github.com/criteo-cookbooks/chef-secrets' if defined?(
 issues_url       'https://github.com/criteo-cookbooks/chef-secrets/issues' if defined?(issues_url)
 
 depends 'chef-vault', '~> 2.1' # cookbook chef-vault 3.0.0 breaks our behavior for now
-gem 'chef-vault', '3.4.3'
+gem 'chef-vault', '4.0.1'
