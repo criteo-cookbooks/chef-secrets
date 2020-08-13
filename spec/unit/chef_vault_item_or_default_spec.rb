@@ -12,13 +12,13 @@ describe ChefVaultCookbook do
     end
 
     it 'returns a ChefVault item if it exists, without a default' do
-      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@@@')
+      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
       allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id')).to eq('secret')
     end
 
     it 'returns a ChefVault item if it exists, with a default' do
-      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@@')
+      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
       allow(ChefVault::Item).to receive(:load).with('bag', 'id').and_return('secret')
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('secret')
     end
@@ -36,6 +36,9 @@ describe ChefVaultCookbook do
       allow(Chef::DataBagItem).to receive(:load).with('bag', 'id')
         .and_raise(Net::HTTPServerException.new('Not Found', response))
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
+      # chef-vault >= 4.0.5
+      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id3').and_raise(ChefVault::Exceptions::ItemNotFound)
+      expect(dummy_class.new.chef_vault_item_or_default('bag', 'id3', 'default3')).to eq('default3')
     end
 
     it 'returns defined default if the vault databag does not exist (Solo mode)' do
@@ -48,7 +51,7 @@ describe ChefVaultCookbook do
     end
 
     it 'returns defined default if the item cannot be decrypted' do
-      allow(Chef::DataBagItem).to receive(:load).with('bag', 'id').and_return('@@@@')
+      allow(ChefVault::Item).to receive(:vault?).with('bag', 'id').and_return(true)
       allow(ChefVault::Item).to receive(:load).with('bag', 'id')
         .and_raise(ChefVault::Exceptions::SecretDecryption)
       expect(dummy_class.new.chef_vault_item_or_default('bag', 'id', 'default')).to eq('default')
