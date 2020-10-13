@@ -12,7 +12,7 @@
 
 driver:
   name: ec2
-  require_chef_omnibus: 12.18.31
+  require_chef_omnibus: 14.7.17
   instance_type: t2.micro
   associate_public_ip: true
   iam_profile_name: test-kitchen
